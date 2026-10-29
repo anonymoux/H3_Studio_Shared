@@ -15,6 +15,44 @@ Chép thư mục này vào `ComfyUI/custom_nodes/` rồi khởi động lại Co
 
 Node tùy chọn: `Comfyui_Minimax_h3_latent_Upscaler` (upscale), `ComfyUI-KJNodes` (Sage attention).
 
+## Model
+
+Đường dẫn tính từ thư mục `ComfyUI/models/`.
+
+### Bắt buộc (~42 GB)
+
+| Thư mục | File | Dung lượng |
+|---|---|---|
+| `diffusion_models/` | [minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors](https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors) | 21 GB |
+| `text_encoders/` | [qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors) | 15,7 GB |
+| `vae/` | [minimax_h3_video_vae_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors) | 2,8 GB |
+| `vae/` | [minimax_h3_audio_vae_fp32.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors) | 0,6 GB |
+| `loras/` | [minimax_h3_ref2v_turbo_8step_v1.1_768p_comfyui_bf16.safetensors](https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_ref2v_turbo_8step_v1.1_768p_comfyui_bf16.safetensors) (Turbo LoRA mặc định) | 2 GB |
+
+### Tùy chọn
+
+| Tính năng | Thư mục | File | Dung lượng |
+|---|---|---|---|
+| Model H3 thay thế | `diffusion_models/` | [minimax_h3_ref2va_pruned_int8_convrot.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors) | 21 GB |
+| VAE video fp16 | `vae/` | [minimax_h3_video_vae_fp16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors) | 5,2 GB |
+| Turbo LoRA | `loras/` | [minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors](https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors) | 2 GB |
+| Turbo LoRA | `loras/` | [minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors) | 2 GB |
+| Turbo LoRA (FL2V) | `loras/` | [minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors](https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors) | 2 GB |
+| Upscale latent | `latent_upscale_models/` | [minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors](https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors) | 0,7 GB |
+| Upscale video SeedVR2 | `SEEDVR2/` | [seedvr2_ema_7b_fp16.safetensors](https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_7b_fp16.safetensors) (tự tải ở lần chạy đầu) | 16,5 GB |
+| Upscale video SeedVR2 | `SEEDVR2/` | [ema_vae_fp16.safetensors](https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors) (tự tải ở lần chạy đầu) | 0,5 GB |
+
+Toàn bộ file gốc của H3: [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3).
+
+### Custom node tùy chọn
+
+| Tính năng | Node | Ghi chú |
+|---|---|---|
+| Upscale latent | [Comfyui_Minimax_h3_latent_Upscaler](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler) | |
+| Sage attention | [ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes) | cần thêm gói pip `sageattention` (chỉ card NVIDIA) |
+| Upscale video SeedVR2 | [ComfyUI-SeedVR2_VideoUpscaler](https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler) + [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) | |
+| RTX Video Super Resolution | [Nvidia_RTX_Nodes_ComfyUI](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) + ComfyUI-VideoHelperSuite | không cần file model; chỉ card NVIDIA RTX |
+
 ## API
 
 | Method | Đường dẫn | Chức năng |
