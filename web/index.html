@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>H3 Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --sunken: #f8f9fa;
+    --line: #e4e6ea;
+    --line-strong: #d3d6dc;
+    --ink: #16191d;
+    --ink-2: #3b4148;
+    --muted: #6d747d;
+    --primary: #2b6b63;
+    --primary-hover: #245a53;
+    --primary-soft: #e6f1ef;
+    --accent: #d9823b;
+    --danger: #c0392b;
+    --danger-soft: #fdecea;
+    --ok: #2e7d4f;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow-pop: 0 12px 32px rgba(16, 24, 40, .18);
+    --radius: 8px;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1113; --panel: #171a1d; --sunken: #1d2125; --line: #272b30; --line-strong: #353a40;
+      --ink: #e8eaed; --ink-2: #c4c8cd; --muted: #8b929a;
+      --primary: #3f9488; --primary-hover: #4aa598; --primary-soft: #1d2f2c;
+      --danger-soft: #3a1f1c; --shadow: none; --shadow-pop: 0 12px 32px rgba(0, 0, 0, .5);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 12px/1.45 "Be Vietnam Pro", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* Top bar */
+  .topbar { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+  .brand-mark { width: 20px; height: 20px; border-radius: 5px; background: linear-gradient(135deg, var(--primary), var(--accent)); }
+  .brand small { font-weight: 500; color: var(--muted); font-size: 11px; }
+  .conn { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); padding: 2px 8px; border-radius: 999px; background: var(--sunken); }
+  .conn b { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); font-size: 0; }
+  .conn.on b { background: var(--ok); }
+  .spacer { flex: 1; }
+  .saved { color: var(--muted); font-size: 11px; }
+  .btn { height: 28px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--panel); font-weight: 600; }
+  .btn:hover { background: var(--sunken); }
+  .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Workspace */
+  .work { flex: 1; min-height: 0; display: grid; gap: 8px; padding: 8px;
+          grid-template-columns: 236px minmax(320px, 1fr) 264px minmax(280px, .9fr); }
+  .pane { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .pane-head { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-bottom: 1px solid var(--line); flex: none; }
+  .pane-head h2 { margin: 0; font-size: 12px; font-weight: 600; }
+  .pane-head .hint { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .count { margin-left: auto; font-size: 11px; color: var(--muted); background: var(--sunken); border: 1px solid var(--line); padding: 0 6px; border-radius: 999px; }
+  .pane-body { flex: 1; min-height: 0; overflow: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Settings */
+  .group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .group + .group { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
+  .group-title { grid-column: 1 / -1; font-size: 11px; font-weight: 600; color: var(--ink-2); display: flex; justify-content: space-between; gap: 6px; }
+  .group-title .note { font-weight: 400; color: var(--muted); text-align: right; }
+  .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .field.wide { grid-column: 1 / -1; }
+  .field > span { font-size: 11px; color: var(--muted); }
+  .field select, .field input[type=number] {
+    width: 100%; height: 28px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel);
+  }
+  .field select:disabled, .field input:disabled { opacity: .5; }
+  .seed { display: flex; gap: 4px; }
+  .seed input { flex: 1; min-width: 0; }
+  .icon-btn { flex: none; width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); font-size: 13px; line-height: 1; }
+  .icon-btn[aria-pressed=true] { background: var(--primary-soft); border-color: var(--primary); }
+
+  /* Switch */
+  .toggle { display: flex; align-items: center; gap: 6px; height: 28px; cursor: pointer; user-select: none; }
+  .toggle input { appearance: none; position: relative; width: 28px; height: 16px; margin: 0; border-radius: 999px; background: var(--line-strong); transition: background .15s; cursor: pointer; flex: none; }
+  .toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .toggle input:checked { background: var(--primary); }
+  .toggle input:checked::after { transform: translateX(12px); }
+  .toggle input:disabled { opacity: .45; cursor: not-allowed; }
+  .toggle span { font-size: 11px; color: var(--ink-2); }
+
+  /* Prompt */
+  textarea#prompt { flex: 1; min-height: 200px; resize: none; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); line-height: 1.55; font-size: 12px; }
+  textarea#prompt:focus { background: var(--panel); border-color: var(--line-strong); outline: none; }
+  .foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+  code.tag { font-family: var(--mono); font-size: 10.5px; background: var(--sunken); padding: 0 4px; border-radius: 3px; }
+
+  /* References */
+  .drop { border: 1px dashed var(--line-strong); border-radius: 6px; padding: 8px; text-align: center; color: var(--ink-2); cursor: pointer; background: var(--sunken); font-size: 11px; }
+  .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .refs { display: flex; flex-direction: column; gap: 4px; }
+  .ref { display: grid; grid-template-columns: 12px 48px 1fr auto; gap: 8px; align-items: center; padding: 4px 6px 4px 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: grab; }
+  .ref:hover { border-color: var(--line-strong); }
+  .ref.dragging { opacity: .4; }
+  .ref.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+  .ref.drop-after { box-shadow: 0 2px 0 var(--accent); }
+  .grip { color: var(--muted); font-size: 11px; text-align: center; user-select: none; letter-spacing: -2px; }
+  .ref img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; background: var(--sunken); display: block; cursor: zoom-in; }
+  .ref .name { line-height: 1; }
+  .ref .name .small-btn { font-family: var(--mono); font-size: 10.5px; color: var(--primary); background: var(--primary-soft); border-color: transparent; }
+  .ref .file { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+  .ref .bar-line { height: 2px; background: var(--accent); border-radius: 1px; margin-top: 3px; transition: width .2s; }
+  .ref > div:nth-child(3) { min-width: 0; }
+  .ref-actions { display: flex; gap: 2px; opacity: .55; transition: opacity .15s; }
+  .ref:hover .ref-actions { opacity: 1; }
+  .small-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 1px 6px; font-size: 11px; line-height: 1.5; color: var(--ink-2); text-decoration: none; }
+  .small-btn:hover { border-color: var(--line-strong); background: var(--sunken); }
+  .small-btn:disabled { opacity: .35; cursor: default; }
+
+  /* Hover preview */
+  .peek { position: fixed; z-index: 20; pointer-events: none; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-pop); opacity: 0; transform: scale(.97); transition: opacity .12s, transform .12s; }
+  .peek.show { opacity: 1; transform: none; }
+  .peek img { display: block; max-width: min(440px, 45vw); max-height: min(520px, 70vh); border-radius: 5px; }
+  .peek figcaption { font-size: 11px; color: var(--muted); padding: 4px 2px 0; max-width: min(440px, 45vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Results */
+  .jobs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-content: start; }
+  .job { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .job .media { position: relative; aspect-ratio: 16 / 9; background: var(--sunken); border-radius: 4px; display: grid; place-items: center; overflow: hidden; }
+  .job video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  .media-note { color: var(--muted); font-size: 11px; text-align: center; padding: 6px; }
+  .badge { position: absolute; top: 5px; left: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; font-size: 10.5px; font-weight: 600; color: #fff; background: rgba(20, 24, 28, .72); backdrop-filter: blur(4px); }
+  .badge .ico { width: 12px; height: 12px; }
+  .badge[data-tip]::after { left: 0; bottom: auto; top: calc(100% + 4px); transform: translateY(-2px); }
+  .badge[data-tip]:hover::after { transform: none; }
+  .badge.ok { background: rgba(46, 125, 79, .92); }
+  .badge.err { background: rgba(192, 57, 43, .92); }
+  .badge.run { background: rgba(43, 107, 99, .92); }
+  .badge.wait { background: rgba(120, 112, 90, .9); }
+  .job-foot { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .job .meta { min-width: 0; padding: 0 2px; font-size: 11.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .job .err { background: var(--danger-soft); color: var(--danger); font-size: 11px; padding: 4px 6px; border-radius: 4px; white-space: pre-wrap; max-height: 90px; overflow: auto; }
+  .job .actions { display: flex; gap: 1px; flex: none; }
+
+  /* Icons, icon buttons and tooltips */
+  .ico { display: inline-flex; width: 14px; height: 14px; flex: none; }
+  .ico svg { width: 100%; height: 100%; }
+  .ico.spin svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .icon-act { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--muted); text-decoration: none; }
+  .icon-act:hover { background: var(--sunken); color: var(--ink); }
+  [data-tip]::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translate(-50%, 2px); padding: 3px 7px; border-radius: 4px; background: var(--ink); color: var(--bg); font-size: 11px; font-weight: 500; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s, transform .12s; z-index: 5; }
+  [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+  .job .actions .icon-act:last-child::after { left: auto; right: 0; transform: translateY(2px); }
+  .job .actions .icon-act:last-child:hover::after { transform: none; }
+
+  /* Expand button and video lightbox */
+  .media-expand { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; color: #fff; background: rgba(20, 24, 28, .62); backdrop-filter: blur(4px); opacity: .85; transition: opacity .12s, background .12s; }
+  .media-expand .ico { width: 13px; height: 13px; }
+  .media-expand:hover { opacity: 1; background: rgba(20, 24, 28, .85); }
+  .media-expand[data-tip]::after { left: auto; right: 0; bottom: auto; top: calc(100% + 4px); transform: translateY(-2px); }
+  .media-expand[data-tip]:hover::after { transform: none; }
+  /* the box hugs the video, which plays at its own pixel size and only shrinks when the window is smaller */
+  .lightbox { width: fit-content; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 0; border: 0; border-radius: 10px; background: #000; color: #fff; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+  .lightbox::backdrop { background: rgba(5, 6, 8, .82); }
+  .lightbox[open] { display: flex; flex-direction: column; }
+  .lightbox video { display: block; width: auto; height: auto; max-width: calc(100vw - 32px); max-height: calc(100vh - 68px); object-fit: contain; background: #000; }
+  /* width 0 + min-width 100% keeps a long file name from widening the box past the video */
+  .lb-bar { width: 0; min-width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 36px; padding: 0 6px 0 12px; font-size: 11.5px; color: #c9ced4; font-variant-numeric: tabular-nums; }
+  .lb-bar > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-actions { display: flex; gap: 2px; flex: none; }
+  .lightbox .icon-act { color: #c9ced4; }
+  .lightbox .icon-act:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+  .lightbox [data-tip]::after { left: auto; right: 0; transform: translateY(2px); background: #fff; color: #111; }
+  .lightbox [data-tip]:hover::after { transform: none; }
+
+  /* Details dialog */
+  .dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); box-shadow: var(--shadow-pop); }
+  .dialog::backdrop { background: rgba(10, 12, 14, .45); }
+  .dialog[open] { display: flex; flex-direction: column; }
+  .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 8px 0 14px; border-bottom: 1px solid var(--line); flex: none; }
+  .dlg-head h3 { margin: 0; font-size: 13px; font-weight: 600; }
+  .dlg-head [data-tip]::after { left: auto; right: 0; transform: none; bottom: auto; top: calc(100% + 4px); }
+  .dlg-body { padding: 12px 14px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+  .dlg-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: 12px; }
+  .dlg-grid dt { color: var(--muted); }
+  .dlg-grid dd { margin: 0; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .dlg-grid dd.strong { font-weight: 700; color: var(--primary); }
+  .dlg-grid hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid var(--line); margin: 3px 0; }
+  .dlg-note { margin: 0; font-size: 11px; color: var(--muted); }
+  .dlg-sub { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--ink-2); }
+  .dlg-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .dlg-form .group-title { margin-top: 4px; align-items: center; }
+  .dlg-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); flex: none; }
+  .dlg-foot .out { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dlg-prompt { margin: 0; max-height: 220px; overflow: auto; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); font: 11px/1.5 var(--mono); white-space: pre-wrap; }
+  .progress { height: 3px; background: var(--sunken); border-radius: 2px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; background: var(--primary); width: 0; transition: width .3s; }
+  .status-ok { color: var(--ok); }
+  .status-err { color: var(--danger); }
+  .empty { color: var(--muted); text-align: center; padding: 24px 8px; font-size: 11px; }
+
+  .toast { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 7px 14px; border-radius: 6px; font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; z-index: 30; white-space: pre-line; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 1400px) {
+    .app { height: auto; min-height: 100vh; }
+    .work { grid-template-columns: 236px minmax(300px, 1fr) 264px; grid-template-rows: max(520px, calc(100vh - 60px)) auto; }
+    .pane.results { grid-column: 1 / -1; max-height: 75vh; }
+  }
+  @media (max-width: 900px) {
+    .work { grid-template-columns: 1fr; grid-template-rows: none; }
+    .pane { min-height: 0; }
+    textarea#prompt { min-height: 280px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark"></span>H3 Studio <small>MiniMax H3 · Ref2VA</small></div>
+    <div class="conn" id="conn"><b>●</b><span>đang kết nối…</span></div>
+    <div class="spacer"></div>
+    <span class="saved" id="saved">Chưa lưu</span>
+    <button class="btn" id="save" title="Lưu nháp (tự lưu khi thay đổi)">Lưu</button>
+    <button class="btn btn-primary" id="go">Tạo video</button>
+  </header>
+
+  <main class="work">
+    <section class="pane">
+      <div class="pane-head"><h2>Cài đặt</h2></div>
+      <div class="pane-body">
+        <div class="group">
+          <div class="group-title">Video</div>
+          <label class="field"><span>Thời lượng</span><select id="duration"></select></label>
+          <label class="field"><span>Tỉ lệ</span><select id="aspect"></select></label>
+          <label class="field wide"><span>Độ phân giải</span><select id="mp"></select></label>
+          <label class="field"><span>Ảnh ref</span>
+            <select id="refSize"><option value="match">match</option><option value="max">max (chậm)</option></select>
+          </label>
+          <label class="field"><span>Steps</span><input type="number" id="steps" min="1" max="100"></label>
+          <div class="field wide"><span>Seed</span>
+            <div class="seed">
+              <input type="number" id="seed" min="0">
+              <button class="icon-btn" id="seedRandom" title="Seed ngẫu nhiên mỗi lần tạo" aria-pressed="true">🎲</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-title">Model</div>
+          <label class="field wide"><span>Model</span><select id="unetName"></select></label>
+          <div class="field"><span>Turbo LoRA</span>
+            <label class="toggle"><input type="checkbox" id="lora"><span id="loraText">Tắt</span></label>
+          </div>
+          <label class="field"><span>Shift video</span>
+            <select id="shiftVideo">
+              <option value="0">Mặc định</option><option value="3">3</option><option value="5">5</option>
+              <option value="6">6</option><option value="8">8</option><option value="12">12</option>
+            </select>
+          </label>
+          <label class="field wide"><span>File LoRA</span><select id="loraName"></select></label>
+          <label class="field"><span>Scheduler</span><select id="scheduler"></select></label>
+          <label class="field"><span>Attention</span><select id="attention"></select></label>
+        </div>
+
+        <div class="group">
+          <div class="group-title">Upscale <span class="note" id="advNote"></span></div>
+          <div class="field"><span>Upscale latent</span>
+            <label class="toggle"><input type="checkbox" id="upscale"><span id="upscaleText">Tắt</span></label>
+          </div>
+          <div class="field"><span>Split sigmas</span>
+            <label class="toggle" title="Bước làm nét dùng phần đuôi lịch nhiễu của tầng 1 thay vì denoise riêng"><input type="checkbox" id="splitSigmas"><span id="splitText">Tắt</span></label>
+          </div>
+          <label class="field wide"><span>Upscale lên</span><select id="upscaleTarget"></select></label>
+          <label class="field"><span>Steps làm nét</span><input type="number" id="refineSteps" min="1" max="20"></label>
+          <label class="field"><span>Denoise</span><input type="number" id="refineDenoise" min="0.05" max="1" step="0.05"></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Prompt</h2>
+        <span class="hint">dùng <code class="tag">&lt;Picture 1&gt;</code> hoặc <code class="tag">@image_1</code></span>
+        <span class="count" id="promptPill">Ref2VA · 0 ảnh</span>
+      </div>
+      <div class="pane-body">
+        <textarea id="prompt" spellcheck="false" placeholder="Mô tả video... Dùng <Picture 1>, <Picture 2> hoặc @image_1 để chỉ ảnh tham chiếu."></textarea>
+        <div class="foot"><span>Tự lưu khi gõ</span><span id="chars">0 ký tự</span></div>
+      </div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <h2>Ảnh tham chiếu</h2>
+        <span class="count" id="refPill">0/9</span>
+      </div>
+      <div class="pane-body">
+        <div class="drop" id="drop" tabindex="0">+ Thêm ảnh · kéo thả, bấm hoặc Ctrl+V</div>
+        <input type="file" id="file" accept="image/*" multiple hidden>
+        <div class="refs" id="refs"></div>
+      </div>
+    </section>
+
+    <section class="pane results">
+      <div class="pane-head">
+        <h2>Kết quả</h2>
+        <span class="hint">ComfyUI/output/video</span>
+        <span class="count" id="jobPill">0</span>
+      </div>
+      <div class="pane-body">
+        <div class="jobs" id="jobs"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<figure class="peek" id="peek" hidden><img alt=""><figcaption></figcaption></figure>
+<dialog class="dialog" id="jobDialog"></dialog>
+<dialog class="lightbox" id="lightbox"></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const MAX_REFS = 9;
+  const FPS = 24;
+  const UPLOAD_SUBFOLDER = 'h3studio';
+  // pre-server-state versions kept the draft and jobs in localStorage; migrated once on boot
+  const LEGACY_DRAFT_KEY = 'h3studio.draft.v1';
+  const LEGACY_JOBS_KEY = 'h3studio.jobs.v1';
+  const SAVE_DELAY_MS = 400;
+  const HISTORY_SETTLE_MS = 1500;
+  // model's trained range is ~124-362 frames at 24 fps
+  const DURATIONS = [5, 6, 7, 8, 9, 10, 12, 15];
+  const ASPECTS = {
+    '9:16 (Portrait Widescreen)': [9, 16], '16:9 (Widescreen)': [16, 9], '1:1 (Square)': [1, 1],
+    '3:4 (Portrait Standard)': [3, 4], '4:3 (Standard)': [4, 3], '2:3 (Portrait Photo)': [2, 3],
+    '3:2 (Photo)': [3, 2], '21:9 (Ultrawide)': [21, 9],
+  };
+  const MEGAPIXELS = [0.3, 0.5, 0.7, 0.9, 1.2];
+  const UPSCALE_MPS = [0.6, 0.7, 0.8, 0.9, 1.0, 1.2];
+  const UPSCALE_SCALES = [1.25, 1.5, 1.75, 2];
+  const ATTENTION_LABELS = { '': 'Mặc định', 'pytorch attention': 'PyTorch', 'comfy kitchen attention': 'Comfy Kitchen', 'sage (KJ patch)': 'Sage (KJ)' };
+  const RES_MULTIPLE = 32;
+  const ACTIVE = ['queued', 'running'];
+
+  const $ = (id) => document.getElementById(id);
+  const clientId = (crypto.randomUUID && crypto.randomUUID()) || String(Math.random()).slice(2);
+
+  let template = null;   // only used for node titles in progress text
+  let state = null;      // draft, mirrored from the server
+  let jobs = [];         // job list, mirrored from the server
+  let live = {};         // per-job progress from the websocket, not persisted
+  let pending = {};      // draft fields changed locally but not yet sent
+  let options = { unets: [], defaultUnet: '', loras: [], upscaler: false, upscaleModels: [], attention: [''], schedulers: ['simple'] };
+
+  // ---------- helpers ----------
+  function readLegacy(key) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
+  }
+  function dropLegacy() {
+    try { localStorage.removeItem(LEGACY_DRAFT_KEY); localStorage.removeItem(LEGACY_JOBS_KEY); } catch { /* ignore */ }
+  }
+  function toast(msg, ms = 2800) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  function viewUrl(f) {
+    const p = new URLSearchParams({ filename: f.filename || f.name, subfolder: f.subfolder || '', type: f.type || 'input' });
+    return '/view?' + p.toString();
+  }
+  function resolution(aspect, mp) {
+    const [w, h] = ASPECTS[aspect] || [1, 1];
+    const scale = Math.sqrt(mp * 1024 * 1024 / (w * h));
+    return [pyRound(w * scale / RES_MULTIPLE) * RES_MULTIPLE, pyRound(h * scale / RES_MULTIPLE) * RES_MULTIPLE];
+  }
+  // Python's round() (half to even), so the sizes shown match what ComfyUI computes
+  function pyRound(x) {
+    const f = Math.floor(x);
+    if (Math.abs(x - f - 0.5) < 1e-9) return f % 2 === 0 ? f : f + 1;
+    return Math.round(x);
+  }
+  function el(tag, attrs = {}, ...children) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (v !== undefined && v !== null) e.setAttribute(k, v);
+    }
+    for (const c of children) if (c != null) e.append(c);
+    return e;
+  }
+  async function api(path, opts = {}) {
+    const init = { ...opts };
+    if (opts.json !== undefined) {
+      init.body = JSON.stringify(opts.json);
+      init.headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      delete init.json;
+    }
+    const r = await fetch(path, init);
+    const text = await r.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw new Error(describeError(body) || `HTTP ${r.status}`);
+    return body;
+  }
+  function describeError(body) {
+    if (!body) return '';
+    if (typeof body === 'string') return body.slice(0, 400);
+    const parts = [];
+    if (body.error) parts.push(typeof body.error === 'string' ? body.error : (body.error.message || body.error.type || JSON.stringify(body.error)));
+    const d = body.details || body;
+    if (d && d.error && d !== body) parts.push(d.error.message || JSON.stringify(d.error));
+    for (const [id, ne] of Object.entries((d && d.node_errors) || {})) {
+      for (const e of ne.errors || []) parts.push(`#${id} ${ne.class_type}: ${e.message} ${e.details || ''}`.trim());
+    }
+    return parts.join('\n');
+  }
+
+  // ---------- server sync ----------
+  let saveTimer = null;
+  function update(patch) {
+    state = { ...state, ...patch };
+    pending = { ...pending, ...patch };
+    $('saved').textContent = 'Đang lưu…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, SAVE_DELAY_MS);
+  }
+  async function flush() {
+    clearTimeout(saveTimer);
+    const patch = pending;
+    if (!Object.keys(patch).length) return;
+    pending = {};
+    if (patch.refs) patch.refs = patch.refs.filter((r) => !r.uploading);
+    try {
+      await api('/h3studio/state', { method: 'PUT', json: { draft: patch, source: clientId } });
+      $('saved').textContent = 'Đã lưu ' + new Date().toLocaleTimeString('vi-VN');
+    } catch (err) {
+      pending = { ...patch, ...pending };
+      $('saved').textContent = 'Chưa lưu được';
+      toast('Không lưu được nháp: ' + err.message, 5000);
+    }
+  }
+  let fetching = null;
+  function fetchState(applyDraft) {
+    // coalesce bursts of websocket events into one request
+    if (fetching) { fetching.again = true; fetching.applyNext = fetching.applyNext || applyDraft; return fetching.promise; }
+    fetching = { again: false, applyNext: false };
+    fetching.promise = (async () => {
+      try {
+        const s = await api('/h3studio/state');
+        jobs = s.jobs || [];
+        for (const id of Object.keys(live)) if (!jobs.some((j) => j.id === id && ACTIVE.includes(j.status))) delete live[id];
+        if (applyDraft || !state) applyServerDraft(s.draft);
+        renderJobs();
+        return s;
+      } catch (err) {
+        toast('Không đọc được trạng thái: ' + err.message, 5000);
+        return null;
+      } finally {
+        const { again, applyNext } = fetching; fetching = null;
+        if (again) fetchState(applyNext);
+      }
+    })();
+    return fetching.promise;
+  }
+  function applyServerDraft(draft) {
+    const uploading = (state?.refs || []).filter((r) => r.uploading);
+    state = { ...draft, ...pending, refs: [...(pending.refs || draft.refs || []).filter((r) => !r.uploading), ...uploading] };
+    renderSettings();
+    renderPromptText();
+    renderRefs();
+  }
+
+  // ---------- settings bar ----------
+  function initSettings() {
+    for (const d of DURATIONS) $('duration').append(el('option', { value: d }, `${d}s`));
+    for (const a of Object.keys(ASPECTS)) $('aspect').append(el('option', { value: a }, a.split(' ')[0]));
+
+    $('duration').onchange = (e) => update({ duration: Number(e.target.value) });
+    $('aspect').onchange = (e) => { update({ aspect: e.target.value }); renderMpOptions(); renderAdvanced(); };
+    $('mp').onchange = (e) => { update({ mp: Number(e.target.value) }); renderAdvanced(); };
+    $('refSize').onchange = (e) => update({ refSize: e.target.value });
+    $('lora').onchange = (e) => { update({ lora: e.target.checked }); renderLora(); };
+    $('steps').onchange = (e) => {
+      const v = Math.max(1, Math.min(100, Math.round(Number(e.target.value) || 1)));
+      e.target.value = v;
+      update({ steps: { ...state.steps, [state.lora ? 'lora' : 'full']: v } });
+    };
+    $('seed').onchange = (e) => update({ seed: Math.max(0, Math.floor(Number(e.target.value) || 0)) });
+    $('seedRandom').onclick = () => { update({ seedRandom: !state.seedRandom }); renderSeed(); };
+    $('save').onclick = flush;
+    $('go').onclick = queueJob;
+
+    $('loraName').onchange = (e) => {
+      // turbo LoRAs are distilled for the step count in their file name
+      const hint = Number((e.target.value.match(/(\d+)step/) || [])[1]);
+      update({ loraName: e.target.value, ...(hint ? { steps: { ...state.steps, lora: hint } } : {}) });
+      renderLora();
+    };
+    $('shiftVideo').onchange = (e) => update({ shiftVideo: Number(e.target.value) });
+    $('attention').onchange = (e) => update({ attention: e.target.value });
+    $('upscale').onchange = (e) => { update({ upscale: e.target.checked }); renderAdvanced(); };
+    $('unetName').onchange = (e) => update({ unetName: e.target.value === options.defaultUnet ? '' : e.target.value });
+    $('scheduler').onchange = (e) => update({ scheduler: e.target.value });
+    // one select covers both upscale kinds: "mp:0.9" (target megapixels) or "x:1.5" (multiplier)
+    $('upscaleTarget').onchange = (e) => {
+      const [kind, v] = e.target.value.split(':');
+      update(kind === 'x' ? { upscaleBy: 'scale', upscaleScale: Number(v) } : { upscaleBy: 'mp', upscaleMp: Number(v) });
+    };
+    $('splitSigmas').onchange = (e) => { update({ splitSigmas: e.target.checked }); renderAdvanced(); };
+    $('refineSteps').onchange = (e) => {
+      const v = Math.max(1, Math.min(20, Math.round(Number(e.target.value) || 4)));
+      e.target.value = v; update({ refineSteps: v });
+    };
+    $('refineDenoise').onchange = (e) => {
+      const v = Math.max(0.05, Math.min(1, Number(e.target.value) || 0.5));
+      e.target.value = v; update({ refineDenoise: v });
+    };
+  }
+  function fillSelect(sel, values, labelOf, current) {
+    sel.textContent = '';
+    const list = values.includes(current) || current === undefined ? values : [...values, current];
+    for (const v of list) sel.append(el('option', { value: v }, labelOf(v)));
+    sel.value = current;
+  }
+  function renderAdvanced() {
+    const short = (v) => v.replace(/^minimax_h3_/, '').replace(/\.safetensors$/, '');
+    fillSelect($('unetName'), options.unets, short, state.unetName || options.defaultUnet);
+    fillSelect($('scheduler'), options.schedulers, (v) => v, state.scheduler || 'simple');
+    fillSelect($('loraName'), options.loras, short, state.loraName);
+    $('shiftVideo').value = String(state.shiftVideo || 0);
+    fillSelect($('attention'), options.attention, (v) => ATTENTION_LABELS[v] || v, state.attention || '');
+    const [bw, bh] = resolution(state.aspect, Number(state.mp));
+    const targets = [...UPSCALE_MPS.map((mp) => `mp:${mp}`), ...UPSCALE_SCALES.map((k) => `x:${k}`)];
+    const current = state.upscaleBy === 'scale' ? `x:${Number(state.upscaleScale)}` : `mp:${Number(state.upscaleMp)}`;
+    fillSelect($('upscaleTarget'), targets, (t) => {
+      const [kind, v] = t.split(':'); const n = Number(v);
+      if (kind === 'x') return `×${n} → ${pyRound(bw * n / RES_MULTIPLE) * RES_MULTIPLE}×${pyRound(bh * n / RES_MULTIPLE) * RES_MULTIPLE}`;
+      const [w, h] = resolution(state.aspect, n); return `${w}×${h} (${n} MP)`;
+    }, current);
+    const canUpscale = options.upscaler && options.upscaleModels.length > 0;
+    $('upscale').checked = !!state.upscale;
+    $('upscale').disabled = !canUpscale && !state.upscale;
+    $('upscaleText').textContent = state.upscale ? 'Bật' : 'Tắt';
+    $('splitSigmas').checked = !!state.splitSigmas;
+    $('splitText').textContent = state.splitSigmas ? 'Bật' : 'Tắt';
+    for (const id of ['upscaleTarget', 'refineSteps', 'splitSigmas']) $(id).disabled = !state.upscale;
+    $('refineDenoise').disabled = !state.upscale || !!state.splitSigmas;
+    if (document.activeElement !== $('refineSteps')) $('refineSteps').value = state.refineSteps;
+    if (document.activeElement !== $('refineDenoise')) $('refineDenoise').value = state.refineDenoise;
+    $('advNote').textContent = canUpscale ? 'LoRA · sigma shift · upscale'
+      : !options.upscaler ? 'Upscale cần node Comfyui_Minimax_h3_latent_Upscaler' : 'Chưa có model trong models/latent_upscale_models';
+  }
+  function renderSettings() {
+    if (!DURATIONS.includes(Number(state.duration))) $('duration').append(el('option', { value: state.duration }, `${state.duration}s`));
+    $('duration').value = state.duration;
+    $('aspect').value = state.aspect;
+    renderMpOptions();
+    $('refSize').value = state.refSize;
+    $('lora').checked = !!state.lora;
+    if (document.activeElement !== $('seed')) $('seed').value = state.seed;
+    renderLora();
+    renderSeed();
+    renderAdvanced();
+  }
+  function renderMpOptions() {
+    const sel = $('mp');
+    sel.textContent = '';
+    const values = MEGAPIXELS.includes(Number(state.mp)) ? MEGAPIXELS : [...MEGAPIXELS, Number(state.mp)].sort((a, b) => a - b);
+    for (const mp of values) {
+      const [w, h] = resolution(state.aspect, mp);
+      sel.append(el('option', { value: mp }, `${w}×${h} (${mp} MP)`));
+    }
+    sel.value = state.mp;
+  }
+  function renderLora() {
+    $('loraText').textContent = state.lora ? 'Bật (nhanh)' : 'Tắt';
+    if (document.activeElement !== $('steps')) $('steps').value = state.lora ? state.steps.lora : state.steps.full;
+  }
+  function renderSeed() {
+    $('seedRandom').setAttribute('aria-pressed', String(!!state.seedRandom));
+    $('seed').disabled = !!state.seedRandom;
+  }
+
+  // ---------- prompt ----------
+  function initPrompt() {
+    $('prompt').addEventListener('input', () => { update({ prompt: $('prompt').value }); renderCounts(); });
+  }
+  function renderPromptText() {
+    const ta = $('prompt');
+    if (ta.value === state.prompt) return;
+    // keep the caret roughly in place when another client edits the prompt
+    const focused = document.activeElement === ta;
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    ta.value = state.prompt;
+    if (focused) { ta.selectionStart = Math.min(s, ta.value.length); ta.selectionEnd = Math.min(e, ta.value.length); }
+    renderCounts();
+  }
+  function renderCounts() {
+    $('chars').textContent = `${(state.prompt || '').length} ký tự`;
+    $('promptPill').textContent = `Ref2VA · ${state.refs.length} ảnh`;
+  }
+  function insertAtCursor(text) {
+    const ta = $('prompt');
+    const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s;
+    ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+    ta.focus(); ta.selectionStart = ta.selectionEnd = s + text.length;
+    update({ prompt: ta.value }); renderCounts();
+  }
+  // Rewrite <Picture N> / @image_N tags after refs are reordered or removed. map: old 1-based -> new 1-based
+  function remapTags(map) {
+    const fix = (whole, n, fmt) => { const m = map[Number(n)]; return m ? fmt(m) : whole; };
+    const p = state.prompt
+      .replace(/<Picture\s*(\d+)>/gi, (w, n) => fix(w, n, (m) => `<Picture ${m}>`))
+      .replace(/@image_?(\d+)/gi, (w, n) => fix(w, n, (m) => `@image_${m}`));
+    if (p !== state.prompt) { update({ prompt: p }); $('prompt').value = p; }
+  }
+
+  // ---------- references ----------
+  function initRefs() {
+    const drop = $('drop'), file = $('file');
+    drop.onclick = () => file.click();
+    drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } };
+    file.onchange = () => { addFiles([...file.files]); file.value = ''; };
+    // the whole column (which contains the drop box) accepts dropped files
+    const zone = $('refs').parentElement;
+    zone.addEventListener('dragover', (e) => { if (hasFiles(e)) { e.preventDefault(); drop.classList.add('over'); } });
+    zone.addEventListener('dragleave', (e) => { if (!zone.contains(e.relatedTarget)) drop.classList.remove('over'); });
+    zone.addEventListener('drop', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault(); drop.classList.remove('over');
+      addFiles([...e.dataTransfer.files]);
+    });
+    document.addEventListener('paste', (e) => {
+      if (document.activeElement === $('prompt')) return;
+      const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith('image/'));
+      if (files.length) { e.preventDefault(); addFiles(files); }
+    });
+  }
+  function hasFiles(e) { return [...(e.dataTransfer?.types || [])].includes('Files'); }
+
+  async function addFiles(files) {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    if (!images.length) { toast('Chỉ nhận file ảnh.'); return; }
+    const room = MAX_REFS - state.refs.length;
+    if (room <= 0) { toast(`Tối đa ${MAX_REFS} ảnh tham chiếu.`); return; }
+    if (images.length > room) toast(`Chỉ thêm ${room} ảnh đầu (tối đa ${MAX_REFS}).`);
+    for (const f of images.slice(0, room)) {
+      const placeholder = { id: crypto.randomUUID?.() || String(Math.random()), uploading: true, preview: URL.createObjectURL(f), label: f.name };
+      state = { ...state, refs: [...state.refs, placeholder] }; renderRefs();
+      try {
+        const fd = new FormData();
+        fd.append('image', f, f.name);
+        fd.append('type', 'input');
+        fd.append('subfolder', UPLOAD_SUBFOLDER);
+        const res = await api('/upload/image', { method: 'POST', body: fd });
+        const done = { id: placeholder.id, name: res.name, subfolder: res.subfolder || '', label: f.name };
+        update({ refs: state.refs.map((r) => (r.id === placeholder.id ? done : r)) });
+      } catch (err) {
+        state = { ...state, refs: state.refs.filter((r) => r.id !== placeholder.id) };
+        toast(`Tải ảnh "${f.name}" thất bại: ${err.message}`, 5000);
+      } finally {
+        URL.revokeObjectURL(placeholder.preview);
+      }
+      renderRefs();
+    }
+  }
+  function moveRef(from, to) {
+    if (from === to || to < 0 || to >= state.refs.length) return;
+    const refs = state.refs.slice();
+    const [item] = refs.splice(from, 1);
+    refs.splice(to, 0, item);
+    const map = {};
+    state.refs.forEach((r, i) => { map[i + 1] = refs.indexOf(r) + 1; });
+    update({ refs });
+    remapTags(map);
+    renderRefs();
+  }
+  function removeRef(index) {
+    const map = {};
+    state.refs.forEach((_, i) => { if (i !== index) map[i + 1] = i < index ? i + 1 : i; });
+    update({ refs: state.refs.filter((_, i) => i !== index) });
+    remapTags(map);
+    renderRefs();
+  }
+  let dragIndex = null;
+  function renderRefs() {
+    const box = $('refs'); box.textContent = '';
+    $('refPill').textContent = `${state.refs.length}/${MAX_REFS}`;
+    renderCounts();
+    if (!state.refs.length) { box.append(el('div', { class: 'empty' }, 'Chưa có ảnh. Kéo thả ảnh vào đây.')); return; }
+    state.refs.forEach((r, i) => {
+      const tag = `<Picture ${i + 1}>`;
+      const img = el('img', { src: r.uploading ? r.preview : viewUrl({ filename: r.name, subfolder: r.subfolder, type: 'input' }), alt: tag, draggable: 'false' });
+      img.addEventListener('mouseenter', (e) => showPeek(img.src, `${tag} · ${r.label || r.name}`, e));
+      img.addEventListener('mousemove', movePeek);
+      img.addEventListener('mouseleave', hidePeek);
+      const card = el('div', { class: 'ref', draggable: r.uploading ? 'false' : 'true' },
+        el('div', { class: 'grip', title: 'Kéo để sắp xếp' }, '⋮⋮'),
+        img,
+        el('div', {},
+          el('div', { class: 'name' }, el('button', { class: 'small-btn', title: 'Chèn vào prompt', onclick: () => insertAtCursor(tag) }, tag)),
+          el('div', { class: 'file', title: r.label || r.name }, r.uploading ? 'Đang tải lên…' : `Ảnh ${i + 1} · ${r.label || r.name}`),
+          el('div', { class: 'bar-line', style: `width:${r.uploading ? 35 : 100}%` })),
+        el('div', { class: 'ref-actions' },
+          el('button', { class: 'small-btn', title: 'Lên', onclick: () => moveRef(i, i - 1), disabled: i === 0 ? '' : null }, '↑'),
+          el('button', { class: 'small-btn', title: 'Xuống', onclick: () => moveRef(i, i + 1), disabled: i === state.refs.length - 1 ? '' : null }, '↓'),
+          el('button', { class: 'small-btn', title: 'Xoá', onclick: () => removeRef(i) }, '✕')));
+      card.addEventListener('dragstart', (e) => { hidePeek(); dragIndex = i; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); });
+      card.addEventListener('dragend', () => { dragIndex = null; card.classList.remove('dragging'); clearMarks(); });
+      card.addEventListener('dragover', (e) => {
+        if (dragIndex === null) return;
+        e.preventDefault(); clearMarks();
+        card.classList.add(isAfter(e, card) ? 'drop-after' : 'drop-before');
+      });
+      card.addEventListener('drop', (e) => {
+        if (dragIndex === null) return;
+        e.preventDefault();
+        let to = isAfter(e, card) ? i + 1 : i;
+        if (dragIndex < to) to -= 1;
+        moveRef(dragIndex, to);
+      });
+      box.append(card);
+    });
+  }
+  function isAfter(e, card) { const r = card.getBoundingClientRect(); return e.clientY > r.top + r.height / 2; }
+
+  // ---------- enlarged preview on thumbnail hover ----------
+  const PEEK_GAP = 16;
+  function showPeek(src, caption, e) {
+    const peek = $('peek');
+    const img = peek.querySelector('img');
+    if (img.getAttribute('src') !== src) img.src = src;
+    peek.querySelector('figcaption').textContent = caption;
+    peek.hidden = false;
+    // position once the image size is known, so the box never runs off-screen
+    if (img.complete) movePeek(e); else img.onload = () => movePeek(e);
+    requestAnimationFrame(() => peek.classList.add('show'));
+  }
+  function movePeek(e) {
+    const peek = $('peek');
+    if (peek.hidden) return;
+    const w = peek.offsetWidth, h = peek.offsetHeight;
+    // prefer the left of the cursor (the refs pane sits right of the prompt), flip if there is no room
+    let x = e.clientX - w - PEEK_GAP;
+    if (x < 8) x = Math.min(e.clientX + PEEK_GAP, innerWidth - w - 8);
+    const y = Math.max(8, Math.min(e.clientY - h / 2, innerHeight - h - 8));
+    peek.style.left = `${x}px`;
+    peek.style.top = `${y}px`;
+  }
+  function hidePeek() {
+    const peek = $('peek');
+    peek.classList.remove('show');
+    peek.hidden = true;
+  }
+  function clearMarks() { document.querySelectorAll('.drop-before,.drop-after').forEach((n) => n.classList.remove('drop-before', 'drop-after')); }
+
+  // ---------- jobs ----------
+  async function queueJob() {
+    if (state.refs.some((r) => r.uploading)) { toast('Đợi ảnh tải lên xong.'); return; }
+    $('go').disabled = true;
+    try {
+      await flush();
+      await api('/h3studio/queue', { method: 'POST', json: { source: clientId } });
+      toast('Đã gửi vào hàng đợi ComfyUI.');
+      await fetchState(true);
+    } catch (err) {
+      toast(err.message, 6000);
+    } finally {
+      $('go').disabled = false;
+    }
+  }
+  async function cancelJob(job) {
+    try { await api(`/h3studio/jobs/${encodeURIComponent(job.id)}/cancel`, { method: 'POST' }); toast('Đã gửi lệnh huỷ.'); }
+    catch (err) { toast('Không huỷ được: ' + err.message); }
+    fetchState(false);
+  }
+  async function hideJob(job) {
+    try { await api(`/h3studio/jobs/${encodeURIComponent(job.id)}?source=${encodeURIComponent(clientId)}`, { method: 'DELETE' }); }
+    catch (err) { toast('Không ẩn được: ' + err.message); }
+    fetchState(false);
+  }
+  // ---------- result cards ----------
+  const ICONS = {
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    loader: '<path d="M21 12a9 9 0 1 1-6.2-8.6"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+    reuse: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+    hide: '<path d="m3 3 18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c5 0 9 4.5 10 7a12.5 12.5 0 0 1-3.2 4.1M6.6 6.6C4.4 8 2.8 10 2 12c1 2.5 5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
+    copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+    upscale: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 15 6-6M10 9h5v5"/>',
+  };
+  function icon(name, cls = '') {
+    const span = document.createElement('span');
+    span.className = `ico ${cls}`.trim();
+    span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+    return span;
+  }
+  function iconBtn(name, tip, onclick, extra = {}) {
+    return el(extra.href ? 'a' : 'button', { class: 'icon-act', 'data-tip': tip, 'aria-label': tip, onclick, ...extra }, icon(name));
+  }
+  const STATUS = {
+    done: { icon: 'check', text: 'Thành công', cls: 'ok' },
+    error: { icon: 'x', text: 'Thất bại', cls: 'err' },
+    cancelled: { icon: 'ban', text: 'Đã huỷ', cls: 'off' },
+    running: { icon: 'loader', text: 'Đang tạo', cls: 'run' },
+    queued: { icon: 'clock', text: 'Đang chờ', cls: 'wait' },
+  };
+  function finalSize(s) { return s.upscaleTo ? s.upscaleTo : [s.w, s.h]; }
+  function realSeconds(s) { return s.frames ? (s.frames / (s.fps || FPS)).toFixed(1).replace(/\.0$/, '') : s.duration; }
+  function isUpscale(s) { return s.kind === 'upscale'; }
+  function fmtDuration(ms) {
+    if (!Number.isFinite(ms) || ms < 0) return '—';
+    const t = Math.round(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+    return [h ? `${h} giờ` : '', m ? `${m} phút` : '', `${sec} giây`].filter(Boolean).join(' ');
+  }
+  function fmtTime(ms) { return ms ? new Date(ms).toLocaleString('vi-VN') : '—'; }
+
+  function renderJobs() {
+    const box = $('jobs'); box.textContent = '';
+    $('jobPill').textContent = String(jobs.length);
+    if (!jobs.length) { box.append(el('div', { class: 'empty' }, 'Chưa có video nào.')); return; }
+    for (const job of jobs) {
+      const j = { ...job, ...(ACTIVE.includes(job.status) ? live[job.id] : null) };
+      const s = j.summary || {};
+      const [fw, fh] = finalSize(s);
+      const st = STATUS[j.status] || { icon: 'info', text: j.status, cls: 'off' };
+      const pct = Math.round((j.progress || 0) * 100);
+      // icon only; the running badge keeps its percentage, the full status sits in the tooltip
+      const badgeText = j.status === 'running' ? `${pct}%` : '';
+      const media = el('div', { class: 'media', style: `aspect-ratio:${fw || 16}/${fh || 9}` },
+        j.videos && j.videos.length
+          ? el('video', { src: viewUrl(j.videos[0]), controls: '', loop: '', preload: 'metadata' })
+          : el('div', { class: 'media-note' }, j.node || (j.status === 'done' ? 'Không thấy file video' : '')),
+        el('span', { class: `badge ${st.cls}`, 'data-tip': st.text, 'aria-label': st.text }, icon(st.icon, j.status === 'running' ? 'spin' : ''), badgeText || null),
+        j.videos && j.videos.length
+          ? el('button', { class: 'media-expand', 'data-tip': 'Xem lớn', 'aria-label': 'Xem lớn', onclick: () => openLightbox(j) }, icon('expand'))
+          : null);
+      const card = el('div', { class: 'job' },
+        media,
+        ACTIVE.includes(j.status) ? el('div', { class: 'progress' }, el('i', { style: `width:${pct}%` })) : null,
+        el('div', { class: 'job-foot' },
+          el('div', { class: 'meta', title: new Date(j.created).toLocaleString('vi-VN') }, `${isUpscale(s) ? 'Upscale · ' : ''}${fw}×${fh} · ${realSeconds(s)}s`),
+          el('div', { class: 'actions' },
+            iconBtn('info', 'Chi tiết', () => openDetails(j)),
+            isUpscale(s) ? null : iconBtn('reuse', 'Dùng lại prompt', () => { update({ prompt: j.prompt || '' }); renderPromptText(); toast('Đã nạp lại prompt.'); }),
+            isUpscale(s) ? null : iconBtn('lock', 'Giữ seed này', () => { update({ seed: s.seed, seedRandom: false }); renderSettings(); toast('Đã cố định seed.'); }),
+            j.videos && j.videos[0] ? iconBtn('upscale', 'Upscale video (SeedVR2 / RTX)', () => openUpscale(j)) : null,
+            j.videos && j.videos[0] ? iconBtn('download', 'Tải video', null, { href: viewUrl(j.videos[0]), download: j.videos[0].filename }) : null,
+            ACTIVE.includes(j.status)
+              ? iconBtn('stop', 'Huỷ job', () => cancelJob(j))
+              : iconBtn('hide', 'Ẩn khỏi danh sách (không xoá file)', () => hideJob(j)))),
+        j.error ? el('div', { class: 'err' }, j.error) : null);
+      box.append(card);
+    }
+  }
+
+  // ---------- video lightbox ----------
+  function openLightbox(j) {
+    const s = j.summary || {};
+    const [fw, fh] = finalSize(s);
+    const box = $('lightbox');
+    // pause the small players so two copies don't play over each other
+    document.querySelectorAll('.job video').forEach((v) => v.pause());
+    box.textContent = '';
+    const video = el('video', { src: viewUrl(j.videos[0]), controls: '', autoplay: '', loop: '', playsinline: '' });
+    // one video pixel per screen pixel, even with Windows display scaling (125%, 150%…); CSS max-width still shrinks it to fit
+    video.addEventListener('loadedmetadata', () => { video.style.width = `${video.videoWidth / devicePixelRatio}px`; }, { once: true });
+    box.append(
+      video,
+      el('div', { class: 'lb-bar' },
+        el('span', {}, `${fw}×${fh} · ${realSeconds(s)}s · ${j.videos[0].filename}`),
+        el('span', { class: 'lb-actions' },
+          iconBtn('download', 'Tải video', null, { href: viewUrl(j.videos[0]), download: j.videos[0].filename }),
+          iconBtn('x', 'Đóng (Esc)', () => box.close()))));
+    box.showModal();
+  }
+  // clicks on the dark backdrop land on the <dialog> itself; emptying it on close stops playback
+  $('lightbox').addEventListener('click', (e) => { if (e.target === $('lightbox')) $('lightbox').close(); });
+  $('lightbox').addEventListener('close', () => { $('lightbox').textContent = ''; });
+
+  // ---------- job details ----------
+  function openDetails(j) {
+    const s = j.summary || {};
+    const [fw, fh] = finalSize(s);
+    const end = j.finishedAt || (ACTIVE.includes(j.status) ? Date.now() : null);
+    const rows = isUpscale(s) ? upscaleRows(j, s, end) : [
+      ['Trạng thái', (STATUS[j.status] || {}).text || j.status],
+      ['File', j.videos && j.videos[0] ? `${j.videos[0].subfolder ? j.videos[0].subfolder + '/' : ''}${j.videos[0].filename}` : '—'],
+      ['Độ phân giải', s.upscaleTo ? `${s.w}×${s.h} → ${fw}×${fh}` : `${fw}×${fh}`],
+      ['Thời lượng', `${realSeconds(s)} giây (${s.frames || '?'} frame, đặt ${s.duration}s)`],
+      null,
+      ['Gửi lúc', fmtTime(j.created)],
+      ['Bắt đầu chạy', fmtTime(j.startedAt)],
+      ['Hoàn thành', fmtTime(j.finishedAt)],
+      // the job record is written after /prompt returns, so an idle queue can start it a few ms "before" it was created
+      ['Chờ trong hàng đợi', j.startedAt ? fmtDuration(Math.max(0, j.startedAt - j.created)) : '—'],
+      ['Thời gian tạo', j.startedAt && end ? fmtDuration(end - j.startedAt) : '—'],
+      ['Tổng thời gian chờ', end && (j.startedAt || ACTIVE.includes(j.status)) ? fmtDuration(end - j.created) + (j.finishedAt ? '' : ' (đang chạy)') : '—', 'strong'],
+      null,
+      ['Model', s.unet ? s.unet.replace(/\.safetensors$/, '') : 'mặc định (ref2va)'],
+      ['LoRA', s.lora ? (s.loraName || 'bật').replace(/\.safetensors$/, '') : 'tắt'],
+      ['Steps', `${s.steps}${s.refine ? ` + làm nét ${s.refine}` : ''}`],
+      ['Scheduler · shift · attention', [s.scheduler || 'simple', s.shift ? `shift ${s.shift}` : 'shift mặc định', s.attention || 'attention mặc định'].join(' · ')],
+      ['Seed', String(s.seed)],
+      ['Ảnh tham chiếu', `${s.refs} ảnh`],
+    ];
+    const timingNote = !j.startedAt && !ACTIVE.includes(j.status)
+      ? el('p', { class: 'dlg-note' }, 'Job này chạy trước khi H3 Studio ghi lại thời gian, nên không có số liệu chờ/tạo.') : null;
+    const dlg = $('jobDialog');
+    dlg.textContent = '';
+    dlg.append(
+      el('div', { class: 'dlg-head' },
+        el('h3', {}, `${isUpscale(s) ? 'Upscale' : 'Chi tiết video'} · ${fw}×${fh} · ${realSeconds(s)}s`),
+        el('button', { class: 'icon-act', 'data-tip': 'Đóng', 'aria-label': 'Đóng', onclick: () => dlg.close() }, icon('x'))),
+      el('div', { class: 'dlg-body' },
+        j.error ? el('div', { class: 'err' }, j.error) : null,
+        el('dl', { class: 'dlg-grid' }, ...rows.flatMap((r) => r
+          ? [el('dt', {}, r[0]), el('dd', { class: r[2] || '' }, r[1])]
+          : [el('hr', {})])),
+        timingNote,
+        isUpscale(s) ? null : el('div', { class: 'dlg-sub' }, el('span', {}, 'Prompt'),
+          iconBtn('copy', 'Copy prompt', async () => {
+            try { await navigator.clipboard.writeText(j.prompt || ''); toast('Đã copy prompt.'); }
+            catch { toast('Không copy được, hãy chọn và copy thủ công.'); }
+          })),
+        isUpscale(s) ? null : el('pre', { class: 'dlg-prompt' }, j.prompt || '')));
+    dlg.showModal();
+  }
+  function upscaleRows(j, s, end) {
+    const o = s.options || {};
+    return [
+      ['Trạng thái', (STATUS[j.status] || {}).text || j.status],
+      ['Nguồn', s.source || '—'],
+      ['File', j.videos && j.videos[0] ? `${j.videos[0].subfolder ? j.videos[0].subfolder + '/' : ''}${j.videos[0].filename}` : '—'],
+      ['Độ phân giải', `${s.srcW}×${s.srcH} → ${s.w}×${s.h}`],
+      ['Thời lượng', `${realSeconds(s)} giây (${s.frames} frame @ ${s.fps} fps)`],
+      null,
+      ['Gửi lúc', fmtTime(j.created)],
+      ['Bắt đầu chạy', fmtTime(j.startedAt)],
+      ['Hoàn thành', fmtTime(j.finishedAt)],
+      ['Chờ trong hàng đợi', j.startedAt ? fmtDuration(Math.max(0, j.startedAt - j.created)) : '—'],
+      ['Thời gian chạy', j.startedAt && end ? fmtDuration(end - j.startedAt) : '—', 'strong'],
+      null,
+      ['SeedVR2', o.seedvr2 ? `${(o.ditModel || '').replace(/\.(safetensors|gguf)$/, '')} · cạnh ngắn ${o.resolution}px · batch ${o.batchSize} · màu ${o.colorCorrection} · swap ${o.blocksToSwap}` : 'tắt'],
+      ['RTX Super Resolution', o.rtx ? `×${o.rtxScale} · ${o.rtxQuality}` : 'tắt'],
+    ];
+  }
+
+  // ---------- video upscale ----------
+  const UPSCALE_PREFS_KEY = 'h3studio.upscale.v1';
+  const SEEDVR2_RESOLUTIONS = [720, 1080, 1440, 2160];
+  const SEEDVR2_BATCHES = [5, 9, 17, 21, 33, 45, 61];
+  const SEEDVR2_SWAPS = [0, 8, 16, 24, 32, 36];
+  const RTX_SCALES = [1.5, 2, 3, 4];
+  let upscaleOptions = null;
+  function upscalePrefs() {
+    try { return JSON.parse(localStorage.getItem(UPSCALE_PREFS_KEY)) || {}; } catch { return {}; }
+  }
+  // mirrors upscale.target_size on the server
+  function upscaleTarget(w, h, o) {
+    if (o.seedvr2) { const k = o.resolution / Math.min(w, h); [w, h] = [pyRound(w * k / 2) * 2, pyRound(h * k / 2) * 2]; }
+    if (o.rtx) [w, h] = [pyRound(w * o.rtxScale), pyRound(h * o.rtxScale)];
+    return [w, h];
+  }
+  async function openUpscale(j) {
+    if (!upscaleOptions) {
+      try { upscaleOptions = await api('/h3studio/upscale/options'); }
+      catch (err) { toast('Không đọc được tuỳ chọn upscale: ' + err.message, 5000); return; }
+    }
+    const U = upscaleOptions;
+    const o = { ...U.defaults, ...upscalePrefs() };
+    if (!U.ditModels.includes(o.ditModel)) o.ditModel = U.defaults.ditModel;
+    if (!U.available.seedvr2) o.seedvr2 = false;
+    if (!U.available.rtx) o.rtx = false;
+    const [srcW, srcH] = finalSize(j.summary || {});
+    const sel = (key, values, labelOf = String) => {
+      const s = el('select', { onchange: () => { o[key] = typeof U.defaults[key] === 'number' ? Number(s.value) : s.value; refresh(); } },
+        ...values.map((v) => el('option', { value: String(v) }, labelOf(v))));
+      s.value = String(o[key]);
+      return s;
+    };
+    const toggle = (key, enabled) => {
+      const box = el('input', { type: 'checkbox', onchange: () => { o[key] = box.checked; refresh(); } });
+      box.checked = !!o[key]; box.disabled = !enabled;
+      return el('label', { class: 'toggle' }, box, el('span', {}, enabled ? 'Bật' : 'chưa cài node'));
+    };
+    const field = (label, control, wide) => el('label', { class: `field${wide ? ' wide' : ''}` }, el('span', {}, label), control);
+    const seedFields = [
+      field('Model DiT', sel('ditModel', U.ditModels, (m) => m.replace(/\.(safetensors|gguf)$/, '')), true),
+      field('Cạnh ngắn', sel('resolution', SEEDVR2_RESOLUTIONS, (r) => `${r}p`)),
+      field('Batch (frame)', sel('batchSize', SEEDVR2_BATCHES)),
+      field('Chỉnh màu', sel('colorCorrection', U.colorCorrections)),
+      field('Block swap', sel('blocksToSwap', SEEDVR2_SWAPS)),
+      field('Attention', sel('attention', U.attention)),
+    ];
+    const rtxFields = [field('Hệ số', sel('rtxScale', RTX_SCALES, (x) => `×${x}`)), field('Chất lượng', sel('rtxQuality', U.rtxQualities))];
+    const out = el('span', { class: 'out' });
+    const go = el('button', { class: 'btn btn-primary', onclick: () => submitUpscale(j, o, go) }, 'Upscale');
+    function refresh() {
+      seedFields.forEach((f) => { f.querySelector('select').disabled = !o.seedvr2; });
+      rtxFields.forEach((f) => { f.querySelector('select').disabled = !o.rtx; });
+      const [w, h] = upscaleTarget(srcW, srcH, o);
+      out.textContent = o.seedvr2 || o.rtx ? `${srcW}×${srcH} → ${w}×${h}` : 'Bật ít nhất một bước';
+      go.disabled = !o.seedvr2 && !o.rtx;
+    }
+    const dlg = $('jobDialog');
+    dlg.textContent = '';
+    dlg.append(
+      el('div', { class: 'dlg-head' },
+        el('h3', {}, `Upscale · ${j.videos[0].filename}`),
+        el('button', { class: 'icon-act', 'data-tip': 'Đóng', 'aria-label': 'Đóng', onclick: () => dlg.close() }, icon('x'))),
+      el('div', { class: 'dlg-body' },
+        el('div', { class: 'dlg-form' },
+          el('div', { class: 'group-title' }, 'SeedVR2 (thêm chi tiết)', toggle('seedvr2', U.available.seedvr2)),
+          ...seedFields,
+          el('div', { class: 'group-title' }, 'RTX Video Super Resolution (phóng nhanh)', toggle('rtx', U.available.rtx)),
+          ...rtxFields),
+        el('p', { class: 'dlg-note' }, 'Lần chạy SeedVR2 đầu tiên sẽ tự tải model (7B fp16 ≈ 16 GB). Frame rate và âm thanh giữ như video gốc.')),
+      el('div', { class: 'dlg-foot' }, out, go));
+    refresh();
+    dlg.showModal();
+  }
+  async function submitUpscale(j, o, btn) {
+    btn.disabled = true;
+    try { localStorage.setItem(UPSCALE_PREFS_KEY, JSON.stringify(o)); } catch { /* prefs are a convenience only */ }
+    try {
+      const v = j.videos[0];
+      await api('/h3studio/upscale', { method: 'POST', json: { video: { filename: v.filename, subfolder: v.subfolder, type: v.type || 'output' }, options: o, parent: j.id, source: clientId } });
+      $('jobDialog').close();
+      toast('Đã gửi job upscale vào hàng đợi.');
+      await fetchState(false);
+    } catch (err) {
+      toast(err.message, 6000);
+      btn.disabled = false;
+    }
+  }
+  function setLive(id, patch) {
+    if (!jobs.some((j) => j.id === id)) return;
+    live = { ...live, [id]: { ...live[id], ...patch } };
+    renderJobs();
+  }
+  function nodeTitle(id) { return template?.[id]?._meta?.title || id; }
+
+  // ---------- websocket ----------
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws?clientId=${encodeURIComponent(clientId)}`);
+    const conn = $('conn');
+    ws.onopen = () => { conn.classList.add('on'); conn.querySelector('span').textContent = 'đã kết nối'; fetchState(true); };
+    ws.onclose = () => { conn.classList.remove('on'); conn.querySelector('span').textContent = 'mất kết nối, thử lại…'; setTimeout(connect, 3000); };
+    ws.onmessage = (ev) => {
+      if (typeof ev.data !== 'string') return;
+      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+      const d = msg.data || {};
+      switch (msg.type) {
+        case 'h3studio.state':
+          fetchState(d.source !== clientId);
+          return;
+        case 'status':
+          // the queue changed (a job started or finished): let the server re-check job statuses
+          if (jobs.some((j) => ACTIVE.includes(j.status))) fetchState(false);
+          return;
+        case 'execution_start': setLive(d.prompt_id, { status: 'running', progress: 0 }); return;
+        case 'executing': if (d.node && d.prompt_id) setLive(d.prompt_id, { status: 'running', node: nodeTitle(d.node) }); return;
+        case 'progress': if (d.max && d.prompt_id) setLive(d.prompt_id, { status: 'running', progress: d.value / d.max, node: `${nodeTitle(d.node)} ${d.value}/${d.max}` }); return;
+        case 'execution_success':
+        case 'execution_error':
+        case 'execution_interrupted':
+          fetchState(false);
+          setTimeout(() => fetchState(false), HISTORY_SETTLE_MS);
+          return;
+      }
+    };
+  }
+
+  // ---------- boot ----------
+  async function migrateLegacy(server) {
+    const draft = readLegacy(LEGACY_DRAFT_KEY), oldJobs = readLegacy(LEGACY_JOBS_KEY);
+    if (!draft && !oldJobs) return;
+    const body = { source: clientId };
+    // only adopt the old draft if the server has never been written to
+    if (draft && server.rev === 0) body.draft = draft;
+    if (Array.isArray(oldJobs) && oldJobs.length) body.jobs = oldJobs.filter((j) => j && j.id);
+    try {
+      await api('/h3studio/state', { method: 'PUT', json: body });
+      dropLegacy();
+    } catch (err) { toast('Không chuyển được nháp cũ: ' + err.message, 5000); }
+  }
+  async function boot() {
+    initSettings(); initPrompt(); initRefs();
+    try { options = { ...options, ...(await api('/h3studio/options')) }; }
+    catch (err) { toast('Không đọc được danh sách LoRA/upscaler: ' + err.message, 5000); }
+    const s = await fetchState(true);
+    if (!s) { $('go').disabled = true; return; }
+    await migrateLegacy(s);
+    await fetchState(true);
+    $('saved').textContent = 'Đã đồng bộ với ComfyUI';
+    try { template = await api('/h3studio/workflow'); } catch { /* titles fall back to node ids */ }
+    connect();
+  }
+  window.addEventListener('beforeunload', () => { if (Object.keys(pending).length) flush(); });
+  boot();
+})();
+</script>
+</body>
+</html>
