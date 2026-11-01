@@ -3,8 +3,10 @@ import copy
 import math
 import random
 import re
+import time
 
 MAX_REFS = 9
+MAX_AUDIOS = 3  # MiniMaxH3ReferenceToVideo takes ref_audio_0..2
 FPS = 24
 RES_MULTIPLE = 32
 OUTPUT_PREFIX = "video/H3Studio"
@@ -48,6 +50,7 @@ ASPECTS = {
 DEFAULT_DRAFT = {
     "prompt": "",
     "refs": [],
+    "audios": [],             # standalone reference audios, <Audio 1>..<Audio 3> in the prompt
     "duration": 5,
     "aspect": "9:16 (Portrait Widescreen)",
     "mp": 0.7,
@@ -79,6 +82,7 @@ def lora_steps_hint(name):
 
 _AT_TAG = re.compile(r"@image_?(\d+)", re.IGNORECASE)
 _PICTURE_TAG = re.compile(r"<Picture\s*(\d+)>", re.IGNORECASE)
+_AUDIO_TAG = re.compile(r"<Audio\s*(\d+)>", re.IGNORECASE)
 
 
 class DraftError(ValueError):
@@ -119,6 +123,15 @@ def validate(draft, has_upscaler=False):
     bad = sorted(n for n in used if n < 1 or n > len(refs))
     if bad:
         raise DraftError("Prompt nhắc tới ảnh không tồn tại: " + ", ".join(f"<Picture {n}>" for n in bad))
+    audios = draft.get("audios") or []
+    if len(audios) > MAX_AUDIOS:
+        raise DraftError(f"Tối đa {MAX_AUDIOS} audio tham chiếu.")
+    if any(a.get("uploading") or not a.get("name") for a in audios):
+        raise DraftError("Có audio tham chiếu chưa tải lên xong.")
+    used = {int(n) for n in _AUDIO_TAG.findall(draft["prompt"])}
+    bad = sorted(n for n in used if n < 1 or n > len(audios))
+    if bad:
+        raise DraftError("Prompt nhắc tới audio không tồn tại: " + ", ".join(f"<Audio {n}>" for n in bad))
     if draft.get("attention", "") not in ATTENTION_BACKENDS:
         raise DraftError(f"Attention không hợp lệ: {draft.get('attention')}")
     if draft.get("scheduler", "simple") not in SCHEDULERS:
@@ -209,6 +222,13 @@ def build(template, draft, seed, has_upscaler=False):
         image = f"{r['subfolder']}/{r['name']}" if r.get("subfolder") else r["name"]
         p[node_id] = {"class_type": "LoadImage", "inputs": {"image": image}, "_meta": {"title": f"Ref {i + 1}"}}
         ref_node[f"ref_images.ref_image_{i}"] = [node_id, 0]
+    for key in [k for k in ref_node if k.startswith("ref_audios.")]:
+        ref_node.pop(key)
+    for i, a in enumerate(draft.get("audios") or []):
+        node_id = f"h3aud{i}"
+        audio = f"{a['subfolder']}/{a['name']}" if a.get("subfolder") else a["name"]
+        p[node_id] = {"class_type": "LoadAudio", "inputs": {"audio": audio}, "_meta": {"title": f"Audio {i + 1}"}}
+        ref_node[f"ref_audios.ref_audio_{i}"] = [node_id, 0]
     ref_node["ref_image_size"] = draft["refSize"]
     p[NODE_PROMPT]["inputs"]["value"] = prompt_for_model(draft["prompt"])
     p[NODE_DURATION]["inputs"]["value"] = float(draft["duration"])
@@ -219,7 +239,9 @@ def build(template, draft, seed, has_upscaler=False):
     p[NODE_STEPS_FULL]["inputs"]["value"] = int(draft["steps"]["full"])
     p[NODE_STEPS_LORA]["inputs"]["value"] = int(draft["steps"]["lora"])
     p[NODE_SEED]["inputs"]["noise_seed"] = int(seed)
-    p[NODE_SAVE]["inputs"]["filename_prefix"] = OUTPUT_PREFIX
+    # SaveVideo numbers files from the highest one on disk, so deleting results reuses old names and the browser
+    # shows its cached copy of the old video: a timestamp in the prefix keeps every name new
+    p[NODE_SAVE]["inputs"]["filename_prefix"] = f"{OUTPUT_PREFIX}_{time.strftime('%Y%m%d-%H%M%S')}"
     if draft.get("unetName"):
         p[NODE_UNET]["inputs"]["unet_name"] = draft["unetName"]
     p[NODE_SCHEDULER]["inputs"]["scheduler"] = draft.get("scheduler", "simple")
@@ -236,6 +258,8 @@ def summary(draft, seed):
         "lora": bool(draft["lora"]), "steps": draft["steps"]["lora" if draft["lora"] else "full"],
         "seed": seed, "refs": len(draft["refs"]),
     }
+    if draft.get("audios"):
+        out["audios"] = len(draft["audios"])
     if draft["lora"]:
         out["loraName"] = draft.get("loraName") or DEFAULT_LORA
     if float(draft.get("shiftVideo") or 0) > 0:

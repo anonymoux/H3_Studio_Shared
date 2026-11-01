@@ -76,6 +76,11 @@
   .group + .group { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
   .group-title { grid-column: 1 / -1; font-size: 11px; font-weight: 600; color: var(--ink-2); display: flex; justify-content: space-between; gap: 6px; }
   .group-title .note { font-weight: 400; color: var(--muted); text-align: right; }
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .preset { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); font-weight: 700; font-size: 12px; text-align: left; }
+  .preset small { font-weight: 400; font-size: 10.5px; color: var(--muted); line-height: 1.3; }
+  .preset:hover { border-color: var(--primary); }
+  .preset[aria-pressed=true] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
   .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .field.wide { grid-column: 1 / -1; }
   .field > span { font-size: 11px; color: var(--muted); }
@@ -121,6 +126,12 @@
   .ref > div:nth-child(3) { min-width: 0; }
   .ref-actions { display: flex; gap: 2px; opacity: .55; transition: opacity .15s; }
   .ref:hover .ref-actions { opacity: 1; }
+  .aud { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+  .aud:hover { border-color: var(--line-strong); }
+  .aud > div:first-child { min-width: 0; }
+  .aud audio { display: block; width: 100%; height: 28px; margin-top: 4px; }
+  .aud:hover .ref-actions { opacity: 1; }
+  .sub-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
   .small-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 1px 6px; font-size: 11px; line-height: 1.5; color: var(--ink-2); text-decoration: none; }
   .small-btn:hover { border-color: var(--line-strong); background: var(--sunken); }
   .small-btn:disabled { opacity: .35; cursor: default; }
@@ -157,6 +168,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .icon-act { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--muted); text-decoration: none; }
   .icon-act:hover { background: var(--sunken); color: var(--ink); }
+  .icon-act.danger:hover { background: var(--danger-soft); color: var(--danger); }
   [data-tip]::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translate(-50%, 2px); padding: 3px 7px; border-radius: 4px; background: var(--ink); color: var(--bg); font-size: 11px; font-weight: 500; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s, transform .12s; z-index: 5; }
   [data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
   .job .actions .icon-act:last-child::after { left: auto; right: 0; transform: translateY(2px); }
@@ -238,6 +250,14 @@
     <section class="pane">
       <div class="pane-head"><h2>Cài đặt</h2></div>
       <div class="pane-body">
+        <div class="presets">
+          <button class="preset" id="presetTest" data-preset="test" aria-pressed="false"
+                  title="0.5 MP · ref match · 8 steps · seed ngẫu nhiên · hybrid + LoRA · shift 6 · simple · Sage · không upscale">
+            Test<small>nháp nhanh, seed ngẫu nhiên</small></button>
+          <button class="preset" id="presetFinal" data-preset="final" aria-pressed="false"
+                  title="Video Test gần nhất (cùng seed) phóng to: upscale latent ×1.25, làm nét 4 steps, denoise 0.5">
+            Final<small>seed trước · upscale ×1.25</small></button>
+        </div>
         <div class="group">
           <div class="group-title">Video</div>
           <label class="field"><span>Thời lượng</span><select id="duration"></select></label>
@@ -290,7 +310,7 @@
     <section class="pane">
       <div class="pane-head">
         <h2>Prompt</h2>
-        <span class="hint">dùng <code class="tag">&lt;Picture 1&gt;</code> hoặc <code class="tag">@image_1</code></span>
+        <span class="hint">dùng <code class="tag">&lt;Picture 1&gt;</code>, <code class="tag">@image_1</code> hoặc <code class="tag">&lt;Audio 1&gt;</code></span>
         <span class="count" id="promptPill">Ref2VA · 0 ảnh</span>
       </div>
       <div class="pane-body">
@@ -301,13 +321,15 @@
 
     <section class="pane">
       <div class="pane-head">
-        <h2>Ảnh tham chiếu</h2>
+        <h2>Tham chiếu</h2>
         <span class="count" id="refPill">0/9</span>
       </div>
       <div class="pane-body">
-        <div class="drop" id="drop" tabindex="0">+ Thêm ảnh · kéo thả, bấm hoặc Ctrl+V</div>
-        <input type="file" id="file" accept="image/*" multiple hidden>
+        <div class="drop" id="drop" tabindex="0">+ Thêm ảnh hoặc audio · kéo thả, bấm hoặc Ctrl+V</div>
+        <input type="file" id="file" accept="image/*,audio/*" multiple hidden>
         <div class="refs" id="refs"></div>
+        <div class="sub-head"><span>Audio tham chiếu</span><span class="count" id="audPill">0/3</span></div>
+        <div class="refs" id="auds"></div>
       </div>
     </section>
 
@@ -333,6 +355,7 @@
   'use strict';
 
   const MAX_REFS = 9;
+  const MAX_AUDIOS = 3;
   const FPS = 24;
   const UPLOAD_SUBFOLDER = 'h3studio';
   // pre-server-state versions kept the draft and jobs in localStorage; migrated once on boot
@@ -350,7 +373,8 @@
   const MEGAPIXELS = [0.3, 0.5, 0.7, 0.9, 1.2];
   const UPSCALE_MPS = [0.6, 0.7, 0.8, 0.9, 1.0, 1.2];
   const UPSCALE_SCALES = [1.25, 1.5, 1.75, 2];
-  const ATTENTION_LABELS = { '': 'Mặc định', 'pytorch attention': 'PyTorch', 'comfy kitchen attention': 'Comfy Kitchen', 'sage (KJ patch)': 'Sage (KJ)' };
+  const SAGE_ATTENTION = 'sage (KJ patch)';
+  const ATTENTION_LABELS = { '': 'Mặc định', 'pytorch attention': 'PyTorch', 'comfy kitchen attention': 'Comfy Kitchen', [SAGE_ATTENTION]: 'Sage (KJ)' };
   const RES_MULTIPLE = 32;
   const ACTIVE = ['queued', 'running'];
 
@@ -435,6 +459,7 @@
     $('saved').textContent = 'Đang lưu…';
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flush, SAVE_DELAY_MS);
+    renderPresets();
   }
   async function flush() {
     clearTimeout(saveTimer);
@@ -442,6 +467,7 @@
     if (!Object.keys(patch).length) return;
     pending = {};
     if (patch.refs) patch.refs = patch.refs.filter((r) => !r.uploading);
+    if (patch.audios) patch.audios = patch.audios.filter((a) => !a.uploading);
     try {
       await api('/h3studio/state', { method: 'PUT', json: { draft: patch, source: clientId } });
       $('saved').textContent = 'Đã lưu ' + new Date().toLocaleTimeString('vi-VN');
@@ -476,10 +502,14 @@
   }
   function applyServerDraft(draft) {
     const uploading = (state?.refs || []).filter((r) => r.uploading);
-    state = { ...draft, ...pending, refs: [...(pending.refs || draft.refs || []).filter((r) => !r.uploading), ...uploading] };
+    const uploadingAudios = (state?.audios || []).filter((a) => a.uploading);
+    state = { ...draft, ...pending,
+      refs: [...(pending.refs || draft.refs || []).filter((r) => !r.uploading), ...uploading],
+      audios: [...(pending.audios || draft.audios || []).filter((a) => !a.uploading), ...uploadingAudios] };
     renderSettings();
     renderPromptText();
     renderRefs();
+    renderAudios();
   }
 
   // ---------- settings bar ----------
@@ -501,6 +531,7 @@
     $('seedRandom').onclick = () => { update({ seedRandom: !state.seedRandom }); renderSeed(); };
     $('save').onclick = flush;
     $('go').onclick = queueJob;
+    for (const b of document.querySelectorAll('.preset')) b.onclick = () => applyPreset(b.dataset.preset);
 
     $('loraName').onchange = (e) => {
       // turbo LoRAs are distilled for the step count in their file name
@@ -573,6 +604,59 @@
     renderLora();
     renderSeed();
     renderAdvanced();
+    renderPresets();
+  }
+
+  // ---------- Test / Final presets ----------
+  // Final is the Test video upscaled: stage 1 runs exactly like Test (same 8-step schedule and seed, so ComfyUI
+  // reuses the cached Test result), then a separate partial-denoise pass refines the upscaled latent. Split sigmas
+  // would stretch stage 1 onto a longer schedule and render a different scene.
+  const PRESET_BASE = { mp: 0.5, refSize: 'match', lora: true, shiftVideo: 6, scheduler: 'simple', attention: SAGE_ATTENTION };
+  const PRESETS = {
+    test: { label: 'Test', patch: { ...PRESET_BASE, seedRandom: true, upscale: false } },
+    final: { label: 'Final', patch: { ...PRESET_BASE, seedRandom: false, upscale: true, splitSigmas: false,
+                                     upscaleBy: 'scale', upscaleScale: 1.25, refineSteps: 4, refineDenoise: 0.5 } },
+  };
+  const PRESET_STEPS = 8;
+  function hybridUnet() { return options.unets.find((u) => u.includes('hybrid')); }
+  // seed of the latest video (not upscale) job, so Final redoes the Test you liked
+  function lastSeed() {
+    const job = jobs.find((j) => j.summary && !isUpscale(j.summary) && j.summary.seed != null);
+    return job ? job.summary.seed : state.seed;
+  }
+  function presetPatch(name) {
+    const unet = hybridUnet();
+    const patch = { ...PRESETS[name].patch, steps: { ...state.steps, lora: PRESET_STEPS } };
+    if (unet) patch.unetName = unet === options.defaultUnet ? '' : unet;
+    if (!options.attention.includes(SAGE_ATTENTION)) delete patch.attention;
+    if (patch.upscale && !(options.upscaler && options.upscaleModels.length)) {
+      for (const k of ['upscale', 'splitSigmas', 'upscaleBy', 'upscaleScale', 'refineSteps']) delete patch[k];
+    }
+    if (name === 'final') patch.seed = lastSeed();
+    return patch;
+  }
+  function applyPreset(name) {
+    const missing = [];
+    if (!hybridUnet()) missing.push('model hybrid');
+    if (!options.attention.includes(SAGE_ATTENTION)) missing.push('Sage attention');
+    if (name === 'final' && !(options.upscaler && options.upscaleModels.length)) missing.push('upscale latent');
+    update(presetPatch(name));
+    renderSettings();
+    const label = PRESETS[name].label;
+    toast(missing.length ? `Đã chọn ${label}. Thiếu ${missing.join(', ')}: giữ nguyên các mục đó.`
+      : name === 'final' ? `Đã chọn ${label} (seed ${state.seed}).` : `Đã chọn ${label}.`);
+  }
+  // a preset button stays lit while the settings still match it
+  function matchesPreset(name) {
+    const want = presetPatch(name);
+    const same = (k, v) => typeof v === 'number' ? Number(state[k]) === v
+      : typeof v === 'boolean' ? !!state[k] === v : (state[k] || '') === v;
+    return Object.entries(want).every(([k, v]) => k === 'seed' || k === 'steps' || same(k, v))
+      && Number(state.steps.lora) === PRESET_STEPS;
+  }
+  function renderPresets() {
+    if (!state) return;
+    for (const b of document.querySelectorAll('.preset')) b.setAttribute('aria-pressed', String(matchesPreset(b.dataset.preset)));
   }
   function renderMpOptions() {
     const sel = $('mp');
@@ -609,7 +693,8 @@
   }
   function renderCounts() {
     $('chars').textContent = `${(state.prompt || '').length} ký tự`;
-    $('promptPill').textContent = `Ref2VA · ${state.refs.length} ảnh`;
+    const audios = (state.audios || []).length;
+    $('promptPill').textContent = `Ref2VA · ${state.refs.length} ảnh${audios ? ` · ${audios} audio` : ''}`;
   }
   function insertAtCursor(text) {
     const ta = $('prompt');
@@ -651,8 +736,10 @@
   function hasFiles(e) { return [...(e.dataTransfer?.types || [])].includes('Files'); }
 
   async function addFiles(files) {
+    const sounds = files.filter((f) => f.type.startsWith('audio/'));
+    if (sounds.length) addAudios(sounds);
     const images = files.filter((f) => f.type.startsWith('image/'));
-    if (!images.length) { toast('Chỉ nhận file ảnh.'); return; }
+    if (!images.length) { if (!sounds.length) toast('Chỉ nhận file ảnh hoặc audio.'); return; }
     const room = MAX_REFS - state.refs.length;
     if (room <= 0) { toast(`Tối đa ${MAX_REFS} ảnh tham chiếu.`); return; }
     if (images.length > room) toast(`Chỉ thêm ${room} ảnh đầu (tối đa ${MAX_REFS}).`);
@@ -736,6 +823,62 @@
   }
   function isAfter(e, card) { const r = card.getBoundingClientRect(); return e.clientY > r.top + r.height / 2; }
 
+  // ---------- reference audios ----------
+  async function uploadFile(f) {
+    const fd = new FormData();
+    fd.append('image', f, f.name);
+    fd.append('type', 'input');
+    fd.append('subfolder', UPLOAD_SUBFOLDER);
+    return api('/upload/image', { method: 'POST', body: fd });
+  }
+  async function addAudios(files) {
+    const room = MAX_AUDIOS - state.audios.length;
+    if (room <= 0) { toast(`Tối đa ${MAX_AUDIOS} audio tham chiếu.`); return; }
+    if (files.length > room) toast(`Chỉ thêm ${room} audio đầu (tối đa ${MAX_AUDIOS}).`);
+    for (const f of files.slice(0, room)) {
+      const placeholder = { id: crypto.randomUUID?.() || String(Math.random()), uploading: true, label: f.name };
+      state = { ...state, audios: [...state.audios, placeholder] }; renderAudios();
+      try {
+        const res = await uploadFile(f);
+        const done = { id: placeholder.id, name: res.name, subfolder: res.subfolder || '', label: f.name };
+        update({ audios: state.audios.map((a) => (a.id === placeholder.id ? done : a)) });
+      } catch (err) {
+        state = { ...state, audios: state.audios.filter((a) => a.id !== placeholder.id) };
+        toast(`Tải audio "${f.name}" thất bại: ${err.message}`, 5000);
+      }
+      renderAudios();
+    }
+  }
+  // Rewrite <Audio N> tags after an audio is removed. map: old 1-based -> new 1-based
+  function remapAudioTags(map) {
+    const p = state.prompt.replace(/<Audio\s*(\d+)>/gi, (w, n) => (map[Number(n)] ? `<Audio ${map[Number(n)]}>` : w));
+    if (p !== state.prompt) { update({ prompt: p }); $('prompt').value = p; }
+  }
+  function removeAudio(index) {
+    const map = {};
+    state.audios.forEach((_, i) => { if (i !== index) map[i + 1] = i < index ? i + 1 : i; });
+    update({ audios: state.audios.filter((_, i) => i !== index) });
+    remapAudioTags(map);
+    renderAudios();
+  }
+  function renderAudios() {
+    const box = $('auds'); box.textContent = '';
+    $('audPill').textContent = `${state.audios.length}/${MAX_AUDIOS}`;
+    renderCounts();
+    if (!state.audios.length) { box.append(el('div', { class: 'empty' }, 'Chưa có audio. Kéo thả file audio vào đây.')); return; }
+    state.audios.forEach((a, i) => {
+      const tag = `<Audio ${i + 1}>`;
+      const player = a.uploading ? null : el('audio', { controls: '', preload: 'metadata', src: viewUrl({ filename: a.name, subfolder: a.subfolder, type: 'input' }) });
+      box.append(el('div', { class: 'aud' },
+        el('div', {},
+          el('div', { class: 'name' }, el('button', { class: 'small-btn', title: 'Chèn vào prompt', onclick: () => insertAtCursor(tag) }, tag)),
+          el('div', { class: 'file', title: a.label || a.name }, a.uploading ? 'Đang tải lên…' : `Audio ${i + 1} · ${a.label || a.name}`),
+          player),
+        el('div', { class: 'ref-actions' },
+          el('button', { class: 'small-btn', title: 'Xoá', onclick: () => removeAudio(i) }, '✕'))));
+    });
+  }
+
   // ---------- enlarged preview on thumbnail hover ----------
   const PEEK_GAP = 16;
   function showPeek(src, caption, e) {
@@ -769,6 +912,7 @@
   // ---------- jobs ----------
   async function queueJob() {
     if (state.refs.some((r) => r.uploading)) { toast('Đợi ảnh tải lên xong.'); return; }
+    if (state.audios.some((a) => a.uploading)) { toast('Đợi audio tải lên xong.'); return; }
     $('go').disabled = true;
     try {
       await flush();
@@ -784,6 +928,16 @@
   async function cancelJob(job) {
     try { await api(`/h3studio/jobs/${encodeURIComponent(job.id)}/cancel`, { method: 'POST' }); toast('Đã gửi lệnh huỷ.'); }
     catch (err) { toast('Không huỷ được: ' + err.message); }
+    fetchState(false);
+  }
+  async function deleteJob(job) {
+    const files = (job.videos || []).map((f) => `${f.subfolder ? f.subfolder + '/' : ''}${f.filename}`);
+    const what = files.length ? `\n\nFile sẽ bị xoá khỏi ổ đĩa:\n${files.join('\n')}` : '';
+    if (!confirm(`Xoá vĩnh viễn video này?${what}\n\nKhông thể hoàn tác.`)) return;
+    try {
+      const res = await api(`/h3studio/jobs/${encodeURIComponent(job.id)}/delete?source=${encodeURIComponent(clientId)}`, { method: 'POST' });
+      toast(res.files.length > 1 ? `Đã xoá vĩnh viễn ${res.files.length} file.` : 'Đã xoá vĩnh viễn.');
+    } catch (err) { toast('Không xoá được: ' + err.message, 6000); }
     fetchState(false);
   }
   async function hideJob(job) {
@@ -802,6 +956,7 @@
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+    trash: '<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
     hide: '<path d="m3 3 18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c5 0 9 4.5 10 7a12.5 12.5 0 0 1-3.2 4.1M6.6 6.6C4.4 8 2.8 10 2 12c1 2.5 5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
     copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
@@ -867,7 +1022,9 @@
             j.videos && j.videos[0] ? iconBtn('download', 'Tải video', null, { href: viewUrl(j.videos[0]), download: j.videos[0].filename }) : null,
             ACTIVE.includes(j.status)
               ? iconBtn('stop', 'Huỷ job', () => cancelJob(j))
-              : iconBtn('hide', 'Ẩn khỏi danh sách (không xoá file)', () => hideJob(j)))),
+              : iconBtn('hide', 'Ẩn khỏi danh sách (không xoá file)', () => hideJob(j)),
+            ACTIVE.includes(j.status) ? null
+              : iconBtn('trash', 'Xoá vĩnh viễn (cả file trên ổ đĩa)', () => deleteJob(j), { class: 'icon-act danger' }))),
         j.error ? el('div', { class: 'err' }, j.error) : null);
       box.append(card);
     }
@@ -921,7 +1078,7 @@
       ['Steps', `${s.steps}${s.refine ? ` + làm nét ${s.refine}` : ''}`],
       ['Scheduler · shift · attention', [s.scheduler || 'simple', s.shift ? `shift ${s.shift}` : 'shift mặc định', s.attention || 'attention mặc định'].join(' · ')],
       ['Seed', String(s.seed)],
-      ['Ảnh tham chiếu', `${s.refs} ảnh`],
+      ['Tham chiếu', `${s.refs} ảnh${s.audios ? ` · ${s.audios} audio` : ''}`],
     ];
     const timingNote = !j.startedAt && !ACTIVE.includes(j.status)
       ? el('p', { class: 'dlg-note' }, 'Job này chạy trước khi H3 Studio ghi lại thời gian, nên không có số liệu chờ/tạo.') : null;

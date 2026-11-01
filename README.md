@@ -4,9 +4,12 @@ Giao diện web gọn nhẹ cho workflow MiniMax H3 Ref2VA trong ComfyUI. Trang 
 
 - Ô soạn prompt hỗ trợ thẻ `<Picture N>` / `@image_N`, tự đánh số lại khi đổi thứ tự ảnh tham chiếu
 - Tối đa 9 ảnh tham chiếu: kéo thả để tải lên, sắp xếp lại, rê chuột để xem ảnh phóng to
+- Tối đa 3 audio tham chiếu (giọng nói, âm thanh), gọi trong prompt bằng `<Audio 1>`…`<Audio 3>`: kéo thả file audio cùng chỗ với ảnh
+- Hai nút đặt sẵn ở đầu mục Cài đặt: **Test** (nháp nhanh 0.5 MP, Turbo LoRA 8 steps, seed ngẫu nhiên) và **Final** (lấy seed của video gần nhất, giữ nguyên cảnh, upscale latent ×1.25 rồi làm nét 4 steps)
 - Thiết lập: thời lượng, tỉ lệ khung hình, độ phân giải, seed, model (UNet), Turbo LoRA, sigma shift, scheduler, attention (có Sage qua KJNodes), kích thước ảnh tham chiếu
 - Tùy chọn upscale latent hai giai đoạn (`MinimaxH3LatentUpscaler3D`) với split sigmas và decode theo ô (tiled)
-- Bảng kết quả hiển thị tiến độ trực tiếp, nhãn trạng thái, hộp chi tiết (thời gian chờ / thời gian render) và trình xem video ở kích thước gốc
+- Bảng kết quả hiển thị tiến độ trực tiếp, nhãn trạng thái, hộp chi tiết (thời gian chờ / thời gian render) và trình xem video ở kích thước gốc; có nút ẩn khỏi danh sách và nút xoá vĩnh viễn (xoá cả file trên ổ đĩa)
+- Tên file kết quả có ngày giờ (`H3Studio_20261031-202257_…mp4`), nên xoá video cũ không làm trang hiện nhầm bản cũ trong cache
 - Bản nháp và danh sách job được lưu trên server (`user/h3studio_state.json`) và đẩy tới các trang đang mở qua websocket của ComfyUI, nên script bên ngoài và trang web dùng chung một trạng thái
 
 ## Cài đặt
@@ -63,6 +66,7 @@ Toàn bộ file gốc của H3: [Comfy-Org/MiniMax-H3](https://huggingface.co/Co
 | POST | `/h3studio/queue` | đưa bản nháp hiện tại vào hàng đợi, trả về job |
 | POST | `/h3studio/jobs/{id}/cancel` | dừng job đang chạy hoặc bỏ khỏi hàng đợi |
 | DELETE | `/h3studio/jobs/{id}` | ẩn job khỏi danh sách (file video vẫn giữ) |
+| POST | `/h3studio/jobs/{id}/delete` | xoá job đã xong khỏi danh sách và xoá file video trên ổ đĩa |
 | GET | `/h3studio/upscale/options` | SeedVR2 / RTX có sẵn không, model DiT, giá trị mặc định |
 | POST | `/h3studio/upscale` | `{video: {filename, subfolder, type}, options, parent?, source?}` → job có `summary.kind = "upscale"` |
 
@@ -104,7 +108,9 @@ Bản nháp và danh sách job nằm trên server, nên một AI agent có quy�
    }'
    ```
 
-   Các trường hay dùng trong `draft`: `prompt`, `refs`, `duration` (giây), `aspect` (vd. `"9:16 (Portrait Widescreen)"`), `mp` (megapixel, vd. `0.5`), `seed`, `seedRandom`, `lora`, `upscale`, `upscaleBy` (`"scale"`/`"mp"`), `upscaleScale`. Gọi `GET /h3studio/state` để xem đầy đủ các trường hiện có, và `GET /h3studio/options` để biết tên model/LoRA hợp lệ.
+   Audio tham chiếu tải lên giống ảnh (`-F "image=@giong-noi.wav"`, cùng `subfolder=h3studio`), rồi ghi vào `"audios": [{"id": "a1", "name": "giong-noi.wav", "subfolder": "h3studio", "label": "giong-noi.wav"}]`; thứ tự trong danh sách = `<Audio 1>`, `<Audio 2>`, `<Audio 3>`.
+
+   Các trường hay dùng trong `draft`: `prompt`, `refs`, `audios`, `duration` (giây), `aspect` (vd. `"9:16 (Portrait Widescreen)"`), `mp` (megapixel, vd. `0.5`), `seed`, `seedRandom`, `lora`, `upscale`, `upscaleBy` (`"scale"`/`"mp"`), `upscaleScale`. Gọi `GET /h3studio/state` để xem đầy đủ các trường hiện có, và `GET /h3studio/options` để biết tên model/LoRA hợp lệ.
 
 3. **Chạy job:**
 

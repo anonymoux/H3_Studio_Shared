@@ -9,9 +9,12 @@ API
   GET    /h3studio/options            -> available LoRAs, upscaler node/models, attention backends
   GET    /h3studio/state              -> {rev, draft, jobs}  (job statuses refreshed)
   PUT    /h3studio/state              body {draft?: {...partial}, source?}  -> state
+                                      (draft.refs = images, draft.audios = reference audios; both are
+                                      {name, subfolder} of files uploaded with POST /upload/image)
   POST   /h3studio/queue              body {source?}  queue the current draft -> job
   POST   /h3studio/jobs/{id}/cancel   interrupt / dequeue a job
   DELETE /h3studio/jobs/{id}          hide a job from the list (file is kept)
+  POST   /h3studio/jobs/{id}/delete   remove a finished job and delete its video files from disk
   GET    /h3studio/upscale/options    SeedVR2 / RTX availability, models and defaults
   POST   /h3studio/upscale            body {video: {filename, subfolder, type}, options, parent?} -> job
 """
@@ -231,6 +234,12 @@ def _clean_draft_patch(patch):
             raise builder.DraftError(f"refs phải là danh sách tối đa {builder.MAX_REFS} ảnh.")
         patch = {**patch, "refs": [{k: r[k] for k in ("id", "name", "subfolder", "label") if k in r}
                                    for r in refs if isinstance(r, dict) and r.get("name")]}
+    if "audios" in patch:
+        audios = patch["audios"]
+        if not isinstance(audios, list) or len(audios) > builder.MAX_AUDIOS:
+            raise builder.DraftError(f"audios phải là danh sách tối đa {builder.MAX_AUDIOS} file.")
+        patch = {**patch, "audios": [{k: a[k] for k in ("id", "name", "subfolder", "label") if k in a}
+                                     for a in audios if isinstance(a, dict) and a.get("name")]}
     if "steps" in patch:
         patch = {**patch, "steps": {**_state["draft"]["steps"], **patch["steps"]}}
     return patch
@@ -415,6 +424,57 @@ async def h3studio_cancel(request):
         nodes.interrupt_processing()
         return web.json_response({"cancelled": "interrupt-sent"})
     return _error("Job không còn trong hàng đợi.", 409)
+
+
+def _output_path(f):
+    """Absolute path of a job's output file. Refuses anything outside ComfyUI/output."""
+    root = os.path.realpath(folder_paths.get_output_directory())
+    path = os.path.realpath(os.path.join(root, f.get("subfolder") or "", f.get("filename") or ""))
+    if f.get("type", "output") != "output" or os.path.commonpath([root, path]) != root or path == root:
+        raise ValueError(f"không phải file trong thư mục output: {f.get('filename')}")
+    return path
+
+
+def _job_files(video):
+    """The listed video plus the files VHS_VideoCombine writes next to it (X-audio.mp4 -> X.mp4, X.png)."""
+    stem, ext = os.path.splitext(video["filename"])
+    stem = stem[:-len("-audio")] if stem.endswith("-audio") else stem
+    names = dict.fromkeys([video["filename"], f"{stem}{ext}", f"{stem}-audio{ext}", f"{stem}.png"])
+    return [{**video, "filename": n} for n in names]
+
+
+def _delete_files(files):
+    """Delete output files. Returns (deleted paths, error messages); missing siblings are skipped."""
+    deleted, errors = [], []
+    for f in files:
+        try:
+            path = _output_path(f)
+            if os.path.exists(path):
+                os.remove(path)
+                deleted.append(path)
+        except (OSError, ValueError) as e:
+            errors.append(f"{f.get('filename')}: {e}")
+    return deleted, errors
+
+
+@routes.post("/h3studio/jobs/{job_id}/delete")
+async def h3studio_delete_job(request):
+    """Remove a finished job from the list and delete its video files from disk for good."""
+    global _state
+    job_id = request.match_info["job_id"]
+    async with _lock:
+        job = next((j for j in _state["jobs"] if j.get("id") == job_id), None)
+        if not job:
+            return _error("Không có job này.", 404)
+        if job.get("status") in _ACTIVE:
+            return _error("Job đang chạy hoặc đang chờ, hãy huỷ trước khi xoá.", 409)
+        deleted, errors = _delete_files([f for v in job.get("videos") or [] for f in _job_files(v)])
+        if errors:
+            # keep the job so the user still sees what could not be deleted
+            return _error("Không xoá được: " + "; ".join(errors), 500)
+        _state = {**_state, "jobs": [j for j in _state["jobs"] if j.get("id") != job_id]}
+        _commit(str(request.query.get("source") or "api"))
+        return web.json_response({"deleted": job_id, "files": deleted})
 
 
 @routes.delete("/h3studio/jobs/{job_id}")

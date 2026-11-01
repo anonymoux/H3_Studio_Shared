@@ -1,6 +1,7 @@
 """Build a ComfyUI API prompt that upscales a finished video: SeedVR2 (detail) and/or RTX Video Super Resolution (2x),
 keeping the source frame rate and audio."""
 import os
+import time
 
 SEEDVR2_NODES = ("SeedVR2LoadDiTModel", "SeedVR2LoadVAEModel", "SeedVR2VideoUpscaler")
 RTX_NODE = "RTXVideoSuperResolution"
@@ -99,9 +100,11 @@ def build(video_path, o):
                                "resize_type.scale": float(o["rtxScale"]), "quality": o["rtxQuality"],
                                "strength": 1.0, "image_encoding": "8-bit RGB"}}
         frames = ["rtx", 0]
+    # VHS_VideoCombine numbers files from the highest one on disk: a timestamp keeps names new after deletions
+    prefix = f"{OUTPUT_PREFIX}_{time.strftime('%Y%m%d-%H%M%S')}"
     p["save"] = {"class_type": "VHS_VideoCombine", "_meta": {"title": "Save upscaled video"},
                  "inputs": {"images": frames, "audio": ["load", 2], "frame_rate": ["info", 0], "loop_count": 0,
-                            "filename_prefix": OUTPUT_PREFIX, "format": "video/h264-mp4", "pix_fmt": "yuv420p",
+                            "filename_prefix": prefix, "format": "video/h264-mp4", "pix_fmt": "yuv420p",
                             "crf": 17, "save_metadata": True, "trim_to_audio": False, "pingpong": False,
                             "save_output": True}}
     return p
